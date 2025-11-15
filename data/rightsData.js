@@ -67,58 +67,250 @@ export const RIGHTS_DATA = [
   },
 ];
 
-export const SCENARIOS = [
-  {
-    id: 1,
-    scenario: 'You are a student from a lower caste background. The school principal refuses to admit you because of your caste. What right is being violated?',
-    options: [
-      { text: 'Right to Equality (Article 14)', correct: true },
-      { text: 'Right to Freedom (Article 19)', correct: false },
-      { text: 'Right to Education (Article 21A)', correct: false },
-    ],
-    explanation: 'This violates the Right to Equality as it discriminates based on caste.',
-  },
-  {
-    id: 2,
-    scenario: 'A journalist is arrested for criticizing the government in a newspaper article. Which right is affected?',
-    options: [
-      { text: 'Right to Freedom of Speech (Article 19)', correct: true },
-      { text: 'Right Against Exploitation (Article 23)', correct: false },
-      { text: 'Right to Constitutional Remedies (Article 32)', correct: false },
-    ],
-    explanation: 'Freedom of speech and expression is protected under Article 19.',
-  },
-  {
-    id: 3,
-    scenario: 'A child is forced to work in a factory instead of going to school. What fundamental right is violated?',
-    options: [
-      { text: 'Right Against Exploitation (Article 23)', correct: true },
-      { text: 'Cultural and Educational Rights (Article 29)', correct: false },
-      { text: 'Freedom of Religion (Article 25)', correct: false },
-    ],
-    explanation: 'Child labour is prohibited under the Right Against Exploitation.',
-  },
-  {
-    id: 4,
-    scenario: 'A minority community wants to set up their own school to preserve their culture. Is this allowed?',
-    options: [
-      { text: 'Yes, under Cultural and Educational Rights (Article 29)', correct: true },
-      { text: 'No, only government schools are allowed', correct: false },
-      { text: 'Only if approved by the majority community', correct: false },
-    ],
-    explanation: 'Article 29 protects the rights of minorities to establish educational institutions.',
-  },
-  {
-    id: 5,
-    scenario: 'Your neighbor is being beaten by police without any reason. You want to file a petition in court. Which right allows this?',
-    options: [
-      { text: 'Right to Constitutional Remedies (Article 32)', correct: true },
-      { text: 'Right to Equality (Article 14)', correct: false },
-      { text: 'Right to Freedom (Article 19)', correct: false },
-    ],
-    explanation: 'Article 32 allows citizens to approach the Supreme Court for enforcement of fundamental rights.',
-  },
-];
+// export const SCENARIOS = [
+//   {
+//     id: 1,
+//     scenario: 'You are a student from a lower caste background. The school principal refuses to admit you because of your caste. What right is being violated?',
+//     options: [
+//       { text: 'Right to Equality (Article 14)', correct: true },
+//       { text: 'Right to Freedom (Article 19)', correct: false },
+//       { text: 'Right to Education (Article 21A)', correct: false },
+//     ],
+//     explanation: 'This violates the Right to Equality as it discriminates based on caste.',
+//   },
+//   {
+//     id: 2,
+//     scenario: 'A journalist is arrested for criticizing the government in a newspaper article. Which right is affected?',
+//     options: [
+//       { text: 'Right to Freedom of Speech (Article 19)', correct: true },
+//       { text: 'Right Against Exploitation (Article 23)', correct: false },
+//       { text: 'Right to Constitutional Remedies (Article 32)', correct: false },
+//     ],
+//     explanation: 'Freedom of speech and expression is protected under Article 19.',
+//   },
+//   {
+//     id: 3,
+//     scenario: 'A child is forced to work in a factory instead of going to school. What fundamental right is violated?',
+//     options: [
+//       { text: 'Right Against Exploitation (Article 23)', correct: true },
+//       { text: 'Cultural and Educational Rights (Article 29)', correct: false },
+//       { text: 'Freedom of Religion (Article 25)', correct: false },
+//     ],
+//     explanation: 'Child labour is prohibited under the Right Against Exploitation.',
+//   },
+//   {
+//     id: 4,
+//     scenario: 'A minority community wants to set up their own school to preserve their culture. Is this allowed?',
+//     options: [
+//       { text: 'Yes, under Cultural and Educational Rights (Article 29)', correct: true },
+//       { text: 'No, only government schools are allowed', correct: false },
+//       { text: 'Only if approved by the majority community', correct: false },
+//     ],
+//     explanation: 'Article 29 protects the rights of minorities to establish educational institutions.',
+//   },
+//   {
+//     id: 5,
+//     scenario: 'Your neighbor is being beaten by police without any reason. You want to file a petition in court. Which right allows this?',
+//     options: [
+//       { text: 'Right to Constitutional Remedies (Article 32)', correct: true },
+//       { text: 'Right to Equality (Article 14)', correct: false },
+//       { text: 'Right to Freedom (Article 19)', correct: false },
+//     ],
+//     explanation: 'Article 32 allows citizens to approach the Supreme Court for enforcement of fundamental rights.',
+//   },
+// ];
+
+export const TF_DATA = {
+  equality: [
+    {
+      statement: "The Right to Equality prohibits discrimination on grounds of religion, race, caste, sex, or place of birth.",
+      correct: true,
+      explanation: "Article 14 ensures all persons are equal before the law and prohibits such discrimination."
+    },
+    {
+      statement: "Untouchability is still allowed in some parts of India under the Constitution.",
+      correct: false,
+      explanation: "Article 17 abolishes untouchability and forbids its practice in any form."
+    },
+    {
+      statement: "The government can discriminate based on caste in public employment.",
+      correct: false,
+      explanation: "Article 16 ensures equality of opportunity, though reservations are allowed for backward classes."
+    },
+    {
+      statement: "Article 15 prohibits discrimination in access to public places.",
+      correct: true,
+      explanation: "Article 15 ensures no discrimination on grounds of religion, race, caste, sex, or place of birth."
+    },
+    {
+      statement: "Titles like 'Sir' or 'Lord' are allowed to be conferred by the government.",
+      correct: false,
+      explanation: "Article 18 abolishes titles and prohibits acceptance of titles from foreign states."
+    }
+  ],
+  quality: [
+    {
+      statement: "Article 21A provides free and compulsory education for children aged 6 to 14 years.",
+      correct: true,
+      explanation: "The Right to Education ensures education for all children in this age group."
+    },
+    {
+      statement: "Private schools are exempt from following the Right to Education norms.",
+      correct: false,
+      explanation: "Private schools must adhere to RTE guidelines and provide free education to a percentage of students."
+    },
+    {
+      statement: "Parents can be penalized if they do not send their children to school.",
+      correct: true,
+      explanation: "The RTE Act holds parents responsible for ensuring their children's education."
+    },
+    {
+      statement: "The Right to Education was added to the Constitution in 1993.",
+      correct: false,
+      explanation: "It was added in 2009 through the 86th Constitutional Amendment."
+    },
+    {
+      statement: "The government has no role in implementing the Right to Education.",
+      correct: false,
+      explanation: "The government is responsible for establishing schools and ensuring accessibility."
+    }
+  ],
+  freedom: [
+    {
+      statement: "Article 19 guarantees freedom of speech and expression.",
+      correct: true,
+      explanation: "Freedom of speech is a key part of the Right to Freedom under Article 19."
+    },
+    {
+      statement: "Freedom of assembly allows citizens to gather with arms.",
+      correct: false,
+      explanation: "Freedom of assembly is for peaceful gatherings without arms."
+    },
+    {
+      statement: "Citizens can be restricted from moving freely within India.",
+      correct: false,
+      explanation: "Article 19(1)(d) guarantees freedom of movement throughout India."
+    },
+    {
+      statement: "Article 20 protects against double jeopardy.",
+      correct: true,
+      explanation: "Article 20 provides protection in respect of conviction for offences."
+    },
+    {
+      statement: "Article 21 allows deprivation of life without due process.",
+      correct: false,
+      explanation: "Article 21 states that no person shall be deprived of life or liberty except according to procedure established by law."
+    }
+  ],
+  exploitation: [
+    {
+      statement: "Article 23 prohibits trafficking in human beings.",
+      correct: true,
+      explanation: "Article 23 prohibits trafficking and all forms of forced labour."
+    },
+    {
+      statement: "Begar (forced labour) is allowed in rural areas.",
+      correct: false,
+      explanation: "Begar is abolished under Article 23 and is prohibited everywhere."
+    },
+    {
+      statement: "Children below 14 can work in factories.",
+      correct: false,
+      explanation: "Article 24 prohibits employment of children below 14 in factories or mines."
+    },
+    {
+      statement: "The state can make laws to prevent forced labour.",
+      correct: true,
+      explanation: "Article 23 allows the state to prohibit forced labour and economic exploitation."
+    },
+    {
+      statement: "Trafficking is allowed for certain economic purposes.",
+      correct: false,
+      explanation: "All forms of trafficking in human beings are strictly prohibited."
+    }
+  ],
+  religion: [
+    {
+      statement: "Article 25 guarantees freedom of conscience.",
+      correct: true,
+      explanation: "Article 25 allows freedom to believe or not believe in any religion."
+    },
+    {
+      statement: "Propagation of religion is prohibited in India.",
+      correct: false,
+      explanation: "Article 25 includes the right to propagate religion, subject to restrictions."
+    },
+    {
+      statement: "Religious denominations can establish institutions for religious purposes.",
+      correct: true,
+      explanation: "Article 26 allows religious denominations to manage their own affairs."
+    },
+    {
+      statement: "The state can impose taxes specifically on religious grounds.",
+      correct: false,
+      explanation: "Article 27 prohibits taxes levied on religious grounds."
+    },
+    {
+      statement: "Religious instruction is mandatory in all schools.",
+      correct: false,
+      explanation: "Article 28 prohibits religious instruction in state-funded schools."
+    }
+  ],
+  culture: [
+    {
+      statement: "Article 29 protects the rights of cultural minorities.",
+      correct: true,
+      explanation: "Article 29 allows minorities to conserve their culture, language, and script."
+    },
+    {
+      statement: "Only religious minorities can establish educational institutions.",
+      correct: false,
+      explanation: "Both religious and linguistic minorities can establish institutions under Article 29."
+    },
+    {
+      statement: "The state can discriminate against minority educational institutions.",
+      correct: false,
+      explanation: "Article 30 prohibits discrimination against minority institutions."
+    },
+    {
+      statement: "Minority institutions must follow government regulations.",
+      correct: true,
+      explanation: "They must maintain educational standards as regulated by the government."
+    },
+    {
+      statement: "Cultural rights are absolute and have no restrictions.",
+      correct: false,
+      explanation: "They are subject to reasonable restrictions for public order and morality."
+    }
+  ],
+  remedies: [
+    {
+      statement: "Article 32 allows citizens to approach the Supreme Court for rights violations.",
+      correct: true,
+      explanation: "Article 32 is the Right to Constitutional Remedies."
+    },
+    {
+      statement: "Article 32 can be suspended during a national emergency.",
+      correct: false,
+      explanation: "Article 32 cannot be suspended even during emergencies."
+    },
+    {
+      statement: "The Supreme Court can issue writs like habeas corpus.",
+      correct: true,
+      explanation: "The Court can issue various writs to enforce fundamental rights."
+    },
+    {
+      statement: "Only citizens can file petitions under Article 32.",
+      correct: false,
+      explanation: "Any person whose rights are violated can approach the Court."
+    },
+    {
+      statement: "Article 32 is called the 'heart and soul' of the Constitution.",
+      correct: true,
+      explanation: "It provides remedies for violation of other fundamental rights."
+    }
+  ]
+};
 
 export const MCQ_DATA = {
   equality: [
@@ -556,3 +748,4 @@ export const MCQ_DATA = {
     }
   ]
 };
+

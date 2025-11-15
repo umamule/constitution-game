@@ -86,6 +86,8 @@ export default function RightDetailScreen() {
                 onPress={() => {
                   if (game.id === 1) {
                     router.push({ pathname: "/screens/QuizScreen", params: { id } });
+                  } else if (game.id === 2) {
+                    router.push({ pathname: "/screens/TFScreen", params: { id } });
                   } else {
                     router.push(game.route);
                   }
