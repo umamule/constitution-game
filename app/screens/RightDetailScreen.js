@@ -88,6 +88,8 @@ export default function RightDetailScreen() {
                     router.push({ pathname: "/screens/QuizScreen", params: { id } });
                   } else if (game.id === 2) {
                     router.push({ pathname: "/screens/TFScreen", params: { id } });
+                  } else if (game.id === 3) {
+                    router.push({ pathname: "/screens/MatchScreen", params: { id } });
                   } else {
                     router.push(game.route);
                   }

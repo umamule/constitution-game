@@ -312,6 +312,58 @@ export const TF_DATA = {
   ]
 };
 
+export const MATCH_DATA = {
+  equality: [
+    { left: "Article 14", right: "Equality before law and equal protection of laws" },
+    { left: "Article 15", right: "Prohibition of discrimination on grounds of religion, race, caste, sex, or place of birth" },
+    { left: "Article 16", right: "Equality of opportunity in public employment" },
+    { left: "Article 17", right: "Abolition of untouchability" },
+    { left: "Article 18", right: "Abolition of titles" }
+  ],
+  quality: [
+    { left: "Article 21A", right: "Right to Education for children aged 6 to 14" },
+    { left: "RTE Act", right: "Free and compulsory education" },
+    { left: "Private schools", right: "Must follow RTE guidelines and provide free education to a percentage of students" },
+    { left: "Parents", right: "Can be penalized for not sending children to school" },
+    { left: "Government role", right: "Establish and maintain schools, ensure accessibility" }
+  ],
+  freedom: [
+    { left: "Article 19", right: "Freedom of speech, expression, assembly, association, movement, residence, and profession" },
+    { left: "Freedom of assembly", right: "Peaceful assembly without arms" },
+    { left: "Freedom of movement", right: "Throughout India" },
+    { left: "Article 20", right: "Protection against double jeopardy, self-incrimination, and ex post facto laws" },
+    { left: "Article 21", right: "Protection of life and personal liberty" }
+  ],
+  exploitation: [
+    { left: "Article 23", right: "Prohibition of trafficking in human beings and forced labour" },
+    { left: "Begar", right: "Abolished and prohibited everywhere" },
+    { left: "Article 24", right: "Prohibition of child labour below 14 in factories or mines" },
+    { left: "State laws", right: "Can be made to prevent forced labour and economic exploitation" },
+    { left: "Trafficking", right: "Strictly prohibited under all circumstances" }
+  ],
+  religion: [
+    { left: "Article 25", right: "Freedom of conscience, profession, practice, and propagation of religion" },
+    { left: "Freedom of conscience", right: "Freedom to believe or not believe in any religion" },
+    { left: "Article 26", right: "Rights of religious denominations to manage their affairs" },
+    { left: "Article 27", right: "Prohibition of taxes on religious grounds" },
+    { left: "Article 28", right: "Prohibition of religious instruction in state-funded schools" }
+  ],
+  culture: [
+    { left: "Article 29", right: "Protection of rights of minorities to conserve culture, language, and script" },
+    { left: "Minority institutions", right: "Can be established to preserve culture" },
+    { left: "Article 30", right: "Right of minorities to establish and administer educational institutions" },
+    { left: "State discrimination", right: "Prohibited against minority institutions" },
+    { left: "Government regulation", right: "Allowed to maintain educational standards" }
+  ],
+  remedies: [
+    { left: "Article 32", right: "Right to Constitutional Remedies" },
+    { left: "Supreme Court", right: "Can issue writs like habeas corpus, mandamus, etc." },
+    { left: "Habeas corpus", right: "To secure release from unlawful detention" },
+    { left: "Mandamus", right: "To compel a public official to perform duty" },
+    { left: "Suspension", right: "Cannot be suspended even during emergencies" }
+  ]
+};
+
 export const MCQ_DATA = {
   equality: [
     {
