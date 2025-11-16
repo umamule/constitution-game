@@ -1,14 +1,12 @@
 // app/screens/signup.js
 import { useRouter } from "expo-router";
-import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { auth } from "../../firebase";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("citizen"); // Default to citizen
+  const [role, setRole] = useState("citizen"); 
   const router = useRouter();
 
   const handleSignup = async () => {
@@ -18,27 +16,23 @@ export default function Signup() {
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const firebaseUid = userCredential.user.uid;
-      console.log("✅ User registered:", userCredential.user);
-
-      // Call backend to save user with role
       const response = await fetch("http://10.250.96.8:5000/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firebaseUid, email, role }),
+        body: JSON.stringify({ email, password, role }),
       });
 
       const data = await response.json();
-      if (!data.ok) {
-        Alert.alert("Signup failed", data.message);
+
+      if (!response.ok) {
+        Alert.alert("Signup failed", data.message || "Something went wrong");
         return;
       }
 
       Alert.alert("Account created successfully!");
       router.replace("/screens/login");
     } catch (error) {
-      console.log("❌ Signup error:", error.message);
+      console.log("❌ Signup error:", error);
       Alert.alert("Signup failed", error.message);
     }
   };
@@ -49,7 +43,7 @@ export default function Signup() {
       <Image source={require("../assets/logo.png")} style={styles.logo} />
 
       <Text style={styles.title}>Create Account</Text>
-      
+
       <TextInput
         placeholder="Email"
         value={email}
@@ -57,6 +51,7 @@ export default function Signup() {
         style={styles.input}
         keyboardType="email-address"
       />
+
       <TextInput
         placeholder="Password"
         value={password}
@@ -66,18 +61,24 @@ export default function Signup() {
       />
 
       <Text style={styles.label}>Select User Type:</Text>
+
       <View style={styles.roleContainer}>
         <TouchableOpacity
           style={[styles.roleButton, role === "citizen" && styles.selectedRole]}
           onPress={() => setRole("citizen")}
         >
-          <Text style={[styles.roleText, role === "citizen" && styles.selectedRoleText]}>Citizen</Text>
+          <Text style={[styles.roleText, role === "citizen" && styles.selectedRoleText]}>
+            Citizen
+          </Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.roleButton, role === "institute" && styles.selectedRole]}
           onPress={() => setRole("institute")}
         >
-          <Text style={[styles.roleText, role === "institute" && styles.selectedRoleText]}>Institute</Text>
+          <Text style={[styles.roleText, role === "institute" && styles.selectedRoleText]}>
+            Institute
+          </Text>
         </TouchableOpacity>
       </View>
 

@@ -1,3 +1,4 @@
+// app/screens/InstituteLearning.js
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
@@ -7,20 +8,73 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
-  ScrollView,
+  Image,
+  Alert,
 } from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import debounce from "lodash.debounce";
 
-const API_BASE = "http:// 10.107.43.191/api"; // <-- change if needed
+const API_BASE = "http://10.107.43.191/api";
+
 export default function InstituteLearning() {
-  const [search, setSearch] = useState("");
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Function to fetch search results
+  const [search, setSearch] = useState("");
+  const [showProfile, setShowProfile] = useState(false);
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [userData, setUserData] = useState(null);
+
+  // --------------------------
+  // Fetch User Data
+  // --------------------------
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      const storedUser = await AsyncStorage.getItem("user");
+      if (!storedUser) return;
+
+      const user = JSON.parse(storedUser);
+      setUserData(user);
+    } catch (error) {
+      console.log("Error fetching user data:", error);
+    }
+  };
+
+  // --------------------------
+  // Logout (Same as CitizenLearning)
+  // --------------------------
+  const handleLogout = async () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Logout",
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem("user");
+              await AsyncStorage.removeItem("token");
+              router.replace("/screens/login");
+            } catch (error) {
+              Alert.alert("Error", "Failed to logout");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // --------------------------
+  // Search System
+  // --------------------------
   const doSearch = async (q) => {
     if (!q || q.trim().length < 1) {
       setResults([]);
@@ -28,21 +82,18 @@ export default function InstituteLearning() {
     }
     setLoading(true);
     try {
-      const res = await fetch(
-        `${API_BASE}/resources/search?q=${encodeURIComponent(q)}`
-      );
+      const res = await fetch(`${API_BASE}/resources/search?q=${encodeURIComponent(q)}`);
       const json = await res.json();
       if (json.ok) setResults(json.results);
       else setResults([]);
     } catch (err) {
-      console.error(err);
+      console.log(err);
       setResults([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Debounce search
   const debounced = useCallback(debounce(doSearch, 400), []);
   useEffect(() => {
     debounced(search);
@@ -51,13 +102,58 @@ export default function InstituteLearning() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* HEADER */}
       <LinearGradient colors={["#FF9800", "#FFB74D"]} style={styles.header}>
-        <Text style={styles.headerText}>Institute Learning</Text>
-        <Text style={styles.subHeader}>Explore Acts, Articles & Case Laws</Text>
+        <View style={styles.headerContent}>
+          <TouchableOpacity
+            style={styles.profileButton}
+            onPress={() => setShowProfile(!showProfile)}
+          >
+            <Image source={require("../assets/logo.png")} style={styles.profileImage} />
+          </TouchableOpacity>
+
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerText}>Institute Learning</Text>
+            <Text style={styles.subHeader}>Explore Acts, Articles & Case Laws</Text>
+          </View>
+        </View>
       </LinearGradient>
 
-      {/* Search Bar */}
+      {/* PROFILE MODAL (Same as CitizenLearning) */}
+      {showProfile && (
+        <Animated.View entering={FadeInUp} style={styles.profileModal}>
+          <View style={styles.profileHeader}>
+            <Image source={require("../assets/logo.png")} style={styles.profileModalImage} />
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowProfile(false)}
+            >
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          {userData && (
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileLabel}>Email:</Text>
+              <Text style={styles.profileValue}>{userData.email}</Text>
+
+              <Text style={styles.profileLabel}>Role:</Text>
+              <Text style={styles.profileValue}>{userData.role}</Text>
+
+              <Text style={styles.profileLabel}>Joined:</Text>
+              <Text style={styles.profileValue}>
+                {new Date(userData.createdAt).toLocaleDateString()}
+              </Text>
+            </View>
+          )}
+
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
+      {/* SEARCH BAR */}
       <View style={styles.searchContainer}>
         <TextInput
           placeholder="Search Acts, Articles, or Case Laws..."
@@ -68,10 +164,9 @@ export default function InstituteLearning() {
         />
       </View>
 
-      {/* Loading indicator */}
       {loading && <ActivityIndicator style={{ margin: 12 }} size="small" />}
 
-      {/* Search Results */}
+      {/* SEARCH RESULTS */}
       <FlatList
         data={results}
         keyExtractor={(item) => item._id || item.id}
@@ -89,13 +184,6 @@ export default function InstituteLearning() {
               {item.summary || item.desc}
             </Text>
           </TouchableOpacity>
-        )}
-        ListEmptyComponent={() => (
-          <View style={{ padding: 20 }}>
-            <Text style={{ color: "#666" }}>
-              No results. Try searching "Article 21", "RTI", or a case name.
-            </Text>
-          </View>
         )}
       />
 
@@ -117,7 +205,7 @@ export default function InstituteLearning() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Profile</Text>
         <Text style={styles.sectionDesc}>
-          Manage your institute’s details, teachers, and course progress.
+          Manage institute details, teachers, and course progress.
         </Text>
         <TouchableOpacity
           style={[styles.button, { backgroundColor: "#4CAF50" }]}
@@ -132,14 +220,57 @@ export default function InstituteLearning() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
+
   header: {
     padding: 25,
     borderBottomLeftRadius: 25,
     borderBottomRightRadius: 25,
     alignItems: "center",
   },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+  },
+  profileButton: { marginRight: 15 },
+  profileImage: {
+    width: 40, height: 40, borderRadius: 20,
+    borderWidth: 2, borderColor: "#fff",
+  },
+  headerTextContainer: { flex: 1, alignItems: "center" },
   headerText: { fontSize: 26, fontWeight: "bold", color: "#fff" },
   subHeader: { fontSize: 14, color: "#fbe9e7", marginTop: 5 },
+
+  profileModal: {
+    backgroundColor: "#fff",
+    margin: 15,
+    padding: 20,
+    borderRadius: 15,
+    elevation: 10,
+    position: "absolute",
+    top: 120,
+    left: 15,
+    right: 15,
+    zIndex: 1000,
+  },
+  profileHeader: { flexDirection: "row", alignItems: "center", marginBottom: 15 },
+  profileModalImage: { width: 50, height: 50, borderRadius: 25, marginRight: 15 },
+
+  closeButton: { position: "absolute", top: 0, right: 0, padding: 5 },
+  closeButtonText: { fontSize: 18, color: "#666" },
+
+  profileInfo: { marginBottom: 20 },
+  profileLabel: { fontSize: 14, color: "#666", fontWeight: "bold", marginTop: 10 },
+  profileValue: { fontSize: 16, color: "#333", marginTop: 2 },
+
+  logoutButton: {
+    backgroundColor: "#FF4444",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  logoutButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+
   searchContainer: {
     margin: 15,
     backgroundColor: "#f5f5f5",
@@ -147,46 +278,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  searchInput: {
-    fontSize: 16,
-    color: "#333",
-  },
+  searchInput: { fontSize: 16, color: "#333" },
+
   card: {
     backgroundColor: "#FFF3E0",
     marginBottom: 12,
     borderRadius: 15,
     padding: 15,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     elevation: 3,
   },
-  typeTag: {
-    fontSize: 12,
-    color: "#FF6F00",
-    fontWeight: "bold",
-    marginBottom: 5,
-    textTransform: "uppercase",
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 4,
-  },
+  typeTag: { fontSize: 12, color: "#FF6F00", fontWeight: "bold" },
+  cardTitle: { fontSize: 16, fontWeight: "bold", color: "#333" },
   cardDesc: { fontSize: 14, color: "#555" },
+
   section: {
     margin: 15,
     backgroundColor: "#FFF8E1",
     borderRadius: 15,
     padding: 15,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     elevation: 3,
   },
   sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#333" },
   sectionDesc: { fontSize: 14, color: "#666", marginVertical: 6 },
+
   button: {
     marginTop: 10,
     padding: 12,

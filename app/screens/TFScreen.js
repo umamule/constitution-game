@@ -1,136 +1,139 @@
+// app/screens/TFScreen.js
+
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradient } from "expo-linear-gradient";
+import {
+  Animated,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { addGlobalScore, addXP } from "../../utils/scoreManager";
 import { TF_DATA } from "../../data/rightsData";
-
-const ResultPopup = ({ visible, isCorrect, onContinue, onTryAgain, explanation }) => {
-  if (!visible) return null;
-  return (
-    <View style={styles.resultCard}>
-      <Text style={[styles.resultText, isCorrect ? styles.correct : styles.incorrect]}>
-        {isCorrect ? "Correct!" : "Incorrect!"}
-      </Text>
-      <Text style={styles.explanation}>{explanation}</Text>
-      <TouchableOpacity style={styles.finishButton} onPress={onContinue}>
-        <Text style={styles.finishButtonText}>Continue</Text>
-      </TouchableOpacity>
-      {!isCorrect && (
-        <TouchableOpacity style={styles.tryAgainButton} onPress={onTryAgain}>
-          <Text style={styles.tryAgainButtonText}>Try Again</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-};
 
 export default function TFScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
+
+  const tfData = TF_DATA[id];
+  const fadeAnim = new Animated.Value(1);
+
+  const [current, setCurrent] = useState(0);
+  const [selected, setSelected] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
-  const [fadeAnim] = useState(new Animated.Value(1));
-
-  // Find the TF data based on id
-  const tfData = TF_DATA[id];
 
   if (!tfData) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>TF Quiz not found!</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>Go Back</Text>
-        </TouchableOpacity>
+        <Text>TF Quiz not found</Text>
       </View>
     );
   }
 
-  const handleNext = () => {
-    if (currentQuestion < tfData.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
+  // ⭐ update global score
+  const handleCorrect = async () => {
+    await addGlobalScore();
+    await addXP(50);
+  };
+
+  const handleAnswer = async (value) => {
+    setSelected(value);
+
+    const correct = value === tfData[current].correct;
+    setIsCorrect(correct);
+
+    if (correct) {
+      await handleCorrect();
+    }
+
+    setShowPopup(true);
+  };
+
+  const next = () => {
+    if (current < tfData.length - 1) {
+      setCurrent(current + 1);
+
       Animated.timing(fadeAnim, {
         toValue: 0,
-        duration: 300,
+        duration: 200,
         useNativeDriver: true,
       }).start(() => {
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 500,
+          duration: 200,
           useNativeDriver: true,
         }).start();
       });
     } else {
-      // Quiz completed
-      router.push('/screens/BadgeScreen');
+      router.push("/screens/BadgeScreen");
     }
   };
 
-  const handleAnswer = (answer) => {
-    setSelectedAnswer(answer);
-    setIsCorrect(answer === tfData[currentQuestion].correct);
-    setShowPopup(true);
-  };
-
-  const handleContinue = () => {
-    setShowPopup(false);
-    setSelectedAnswer(null);
-    handleNext();
-  };
-
-  const handleTryAgain = () => {
-    setShowPopup(false);
-    setSelectedAnswer(null);
-  };
-
   return (
-    <LinearGradient
-      colors={['#FF9933', '#FFFFFF', '#138808']} // Indian tricolor
-      style={styles.container}
-    >
-      <ScrollView style={styles.container}>
-        <Text style={styles.title}>True or False Quiz</Text>
+    <LinearGradient colors={["#FF9933", "#FFFFFF", "#138808"]} style={styles.container}>
+      <ScrollView>
+        <Text style={styles.title}>True or False</Text>
 
-        <Animated.View style={[styles.quizCard, { opacity: fadeAnim }]}>
-          <Text style={styles.questionNumber}>Statement {currentQuestion + 1} of {tfData.length}</Text>
-          <Text style={styles.question}>{tfData[currentQuestion].statement}</Text>
-          <View style={styles.tfContainer}>
+        <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
+          <Text style={styles.number}>
+            Statement {current + 1} of {tfData.length}
+          </Text>
+
+          <Text style={styles.statement}>{tfData[current].statement}</Text>
+
+          <View style={styles.row}>
             <TouchableOpacity
               style={[
-                styles.tfButton,
-                selectedAnswer === true && {
-                  backgroundColor: true === tfData[currentQuestion].correct ? "#4CAF50" : "#F44336",
+                styles.btn,
+                selected === true && {
+                  backgroundColor: true === tfData[current].correct ? "#4CAF50" : "#F44336",
                 },
               ]}
-              onPress={() => !showPopup && handleAnswer(true)}
               disabled={showPopup}
+              onPress={() => handleAnswer(true)}
             >
-              <Text style={styles.tfButtonText}>True</Text>
+              <Text style={styles.btnText}>True</Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={[
-                styles.tfButton,
-                selectedAnswer === false && {
-                  backgroundColor: false === tfData[currentQuestion].correct ? "#4CAF50" : "#F44336",
+                styles.btn,
+                selected === false && {
+                  backgroundColor: false === tfData[current].correct ? "#4CAF50" : "#F44336",
                 },
               ]}
-              onPress={() => !showPopup && handleAnswer(false)}
               disabled={showPopup}
+              onPress={() => handleAnswer(false)}
             >
-              <Text style={styles.tfButtonText}>False</Text>
+              <Text style={styles.btnText}>False</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Result Popup */}
-          <ResultPopup
-            visible={showPopup}
-            isCorrect={isCorrect}
-            onContinue={handleContinue}
-            onTryAgain={handleTryAgain}
-            explanation={tfData[currentQuestion].explanation}
-          />
+          {showPopup && (
+            <View style={styles.popup}>
+              <Text style={[styles.popupText, isCorrect ? styles.correct : styles.incorrect]}>
+                {isCorrect ? "Correct!" : "Incorrect!"}
+              </Text>
+
+              <Text style={styles.explain}>{tfData[current].explanation}</Text>
+
+              <TouchableOpacity
+                style={styles.nextBtn}
+                onPress={() => {
+                  setShowPopup(false);
+                  setSelected(null);
+                  next();
+                }}
+              >
+                <Text style={styles.nextText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </Animated.View>
       </ScrollView>
     </LinearGradient>
@@ -138,119 +141,20 @@ export default function TFScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#FAFAFA",
-  },
-  errorText: {
-    fontSize: 18,
-    color: "#F44336",
-    marginBottom: 20,
-  },
-  backButton: {
-    backgroundColor: "#4CAF50",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-  },
-  backButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#2E7D32",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  quizCard: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 15,
-    elevation: 5,
-  },
-  questionNumber: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 10,
-  },
-  question: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 20,
-  },
-  tfContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
-  },
-  tfButton: {
-    backgroundColor: "#F5F5F5",
-    padding: 15,
-    borderRadius: 10,
-    width: '40%',
-    alignItems: 'center',
-  },
-  tfButtonText: {
-    fontSize: 16,
-    color: "#333",
-    fontWeight: 'bold',
-  },
-  resultCard: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: "#E8F5E9",
-    borderRadius: 10,
-  },
-  resultText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#2E7D32",
-    marginBottom: 10,
-  },
-  explanation: {
-    fontSize: 14,
-    color: "#555",
-    marginBottom: 10,
-  },
-  correct: {
-    color: "#4CAF50",
-  },
-  incorrect: {
-    color: "#F44336",
-  },
-  finishButton: {
-    backgroundColor: "#4CAF50",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  finishButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  tryAgainButton: {
-    backgroundColor: "#FF9800",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  tryAgainButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  container: { flex: 1, padding: 20 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  title: { fontSize: 26, fontWeight: "bold", textAlign: "center", marginBottom: 20 },
+  card: { backgroundColor: "#fff", padding: 20, borderRadius: 15 },
+  number: { color: "#777", marginBottom: 10 },
+  statement: { fontSize: 18, fontWeight: "bold", marginBottom: 20 },
+  row: { flexDirection: "row", justifyContent: "space-around" },
+  btn: { backgroundColor: "#eee", padding: 15, borderRadius: 10, width: "40%" },
+  btnText: { textAlign: "center", fontSize: 16 },
+  popup: { marginTop: 20, backgroundColor: "#E8F5E9", padding: 15, borderRadius: 10 },
+  popupText: { fontSize: 18, fontWeight: "bold" },
+  correct: { color: "#4CAF50" },
+  incorrect: { color: "#F44336" },
+  explain: { marginVertical: 10, color: "#333" },
+  nextBtn: { backgroundColor: "#4CAF50", padding: 12, borderRadius: 10 },
+  nextText: { color: "#fff", fontWeight: "bold", textAlign: "center" },
 });

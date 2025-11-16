@@ -1,9 +1,14 @@
+// app/screens/MatchingScreen.js
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MATCH_DATA } from '../../data/rightsData';
+
+// ⭐ Global Score Manager
+import { addGlobalScore, addXP } from '../../utils/scoreManager';
 
 const MatchingScreen = () => {
   const router = useRouter();
@@ -16,11 +21,11 @@ const MatchingScreen = () => {
   const [matchedPairs, setMatchedPairs] = useState([]);
   const [score, setScore] = useState(0);
 
-  const [wrongFlash, setWrongFlash] = useState(false); // red highlight for wrong match
+  const [wrongFlash, setWrongFlash] = useState(false);
 
   const isComplete = pairs.length > 0 && matchedPairs.length === pairs.length;
 
-  // Load lesson data
+  // Load Data
   useEffect(() => {
     if (id && MATCH_DATA[id]) {
       const formatted = MATCH_DATA[id].map(item => ({
@@ -37,7 +42,6 @@ const MatchingScreen = () => {
     }
   }, [id]);
 
-  // Shuffle function
   const shuffleArray = (arr) => {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
@@ -50,20 +54,26 @@ const MatchingScreen = () => {
   const terms = pairs.map(p => p.term);
   const definitions = pairs.map(p => p.definition);
 
-  // ---------------------------
-  // Matching Logic (no popup)
-  // ---------------------------
-  const checkMatch = (term, def) => {
+  // -------------------------------------------------
+  //   MATCH LOGIC + GLOBAL SCORE UPDATE
+  // -------------------------------------------------
+  const checkMatch = async (term, def) => {
     const pair = pairs.find(p => p.term === term && p.definition === def);
 
     if (pair) {
-      // correct
+      // Correct Match
       setMatchedPairs(prev => [...prev, pair]);
       setScore(prev => prev + 1);
+
+      // ⭐ GLOBAL SCORE & XP UPDATE
+      await addGlobalScore();   // +1 score
+      await addXP(50);          // +50 XP
+
       setSelectedTerm(null);
       setSelectedDef(null);
+
     } else {
-      // wrong → flash red for 600ms
+      // Wrong Match → Flash Red
       setWrongFlash(true);
       setTimeout(() => {
         setWrongFlash(false);
@@ -91,32 +101,14 @@ const MatchingScreen = () => {
     }
   };
 
-  // Submit results
+  // -------------------------------------------------
+  // SUBMIT
+  // -------------------------------------------------
   const handleSubmitAll = async () => {
-    router.push({
-      pathname: '/screens/BadgeScreen',
-      params: { id, score }
-    });
-
-    // Save progress in background
-    (async () => {
-      try {
-        const userId = await AsyncStorage.getItem('userId');
-        if (userId) {
-          fetch(`http://10.44.114.8:5000/api/users/progress/${userId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              quizzesCompleted: [id],
-              quizScores: { [id]: score },
-            }),
-          }).catch(() => {});
-        }
-      } catch {}
-    })();
+    router.push('/screens/BadgeScreen');
   };
 
-  // Loading screen
+  // Loading Screen
   if (!pairs.length) {
     return (
       <View style={styles.container}>
@@ -125,98 +117,95 @@ const MatchingScreen = () => {
     );
   }
 
-  // ---------------------------
-  // UI
-  // ---------------------------
   return (
     <LinearGradient
-              colors={['#FF9933', '#FFFFFF', '#138808']} // Indian tricolor
-              style={styles.container}
-            >
-    <View style={styles.container}>
-      <Text style={styles.title}>{id?.toUpperCase()} Matching Game</Text>
+      colors={['#FF9933', '#FFFFFF', '#138808']}
+      style={styles.container}
+    >
+      <View style={styles.container}>
+        <Text style={styles.title}>{id?.toUpperCase()} Matching Game</Text>
 
-      <View style={styles.gameContainer}>
-        {/* LEFT COLUMN */}
-        <View style={styles.column}>
-          <Text style={styles.columnTitle}>Left</Text>
+        <View style={styles.gameContainer}>
+          {/* LEFT SIDE */}
+          <View style={styles.column}>
+            <Text style={styles.columnTitle}>Left</Text>
 
-          {terms.map((term, idx) => {
-            const matched = matchedPairs.some(p => p.term === term);
+            {terms.map((term, idx) => {
+              const matched = matchedPairs.some(p => p.term === term);
+              const isWrong = wrongFlash && selectedTerm === term;
 
-            const isSelectedWrong =
-              wrongFlash && selectedTerm === term;
+              return (
+                <TouchableOpacity
+                  key={`L-${idx}`}
+                  style={[
+                    styles.item,
+                    matched && styles.correctItem,
+                    selectedTerm === term && !matched && styles.selectedItem,
+                    isWrong && styles.wrongItem
+                  ]}
+                  disabled={matched}
+                  onPress={() => handleSelectTerm(term)}
+                >
+                  <Text style={styles.itemText}>{term}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
-            return (
-              <TouchableOpacity
-                key={`L-${idx}`}
-                style={[
-                  styles.item,
-                  matched && styles.correctItem,
-                  selectedTerm === term && !matched && styles.selectedItem,
-                  isSelectedWrong && styles.wrongItem
-                ]}
-                disabled={matched}
-                onPress={() => handleSelectTerm(term)}
-              >
-                <Text style={styles.itemText}>{term}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          {/* RIGHT SIDE */}
+          <View style={styles.column}>
+            <Text style={styles.columnTitle}>Right</Text>
+
+            {definitions.map((def, idx) => {
+              const matched = matchedPairs.some(p => p.definition === def);
+              const isWrong = wrongFlash && selectedDef === def;
+
+              return (
+                <TouchableOpacity
+                  key={`R-${idx}`}
+                  style={[
+                    styles.item,
+                    matched && styles.correctItem,
+                    selectedDef === def && !matched && styles.selectedItem,
+                    isWrong && styles.wrongItem
+                  ]}
+                  disabled={matched}
+                  onPress={() => handleSelectDef(def)}
+                >
+                  <Text style={styles.itemText}>{def}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
-        {/* RIGHT COLUMN */}
-        <View style={styles.column}>
-          <Text style={styles.columnTitle}>Right</Text>
+        {/* Progress */}
+        <View style={styles.progressRow}>
+          <Text style={styles.progressText}>
+            Matched: {matchedPairs.length}/{pairs.length}
+          </Text>
 
-          {definitions.map((def, idx) => {
-            const matched = matchedPairs.some(p => p.definition === def);
-
-            const isSelectedWrong =
-              wrongFlash && selectedDef === def;
-
-            return (
-              <TouchableOpacity
-                key={`R-${idx}`}
-                style={[
-                  styles.item,
-                  matched && styles.correctItem,
-                  selectedDef === def && !matched && styles.selectedItem,
-                  isSelectedWrong && styles.wrongItem
-                ]}
-                disabled={matched}
-                onPress={() => handleSelectDef(def)}
-              >
-                <Text style={styles.itemText}>{def}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          <Text style={styles.progressText}>Score: {score}</Text>
         </View>
+
+        {isComplete && (
+          <View style={styles.submitContainer}>
+            <TouchableOpacity style={styles.submitButton} onPress={handleSubmitAll}>
+              <Text style={styles.submitButtonText}>Submit</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
-
-      {/* PROGRESS */}
-      <View style={styles.progressRow}>
-        <Text style={styles.progressText}>
-          Matched: {matchedPairs.length}/{pairs.length}
-        </Text>
-        <Text style={styles.progressText}>Score: {score}</Text>
-      </View>
-
-      {/* SUBMIT BUTTON */}
-      {isComplete && (
-        <View style={styles.submitContainer}>
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmitAll}>
-            <Text style={styles.submitButtonText}>Submit </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
     </LinearGradient>
   );
 };
 
+// ----------------------------------------
+// STYLES
+// ----------------------------------------
+
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 10,  },
+  container: { flex: 1, padding: 10 },
   title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
 
   gameContainer: { flexDirection: 'row', justifyContent: 'space-between' },
@@ -229,10 +218,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderRadius: 10,
   },
-
-  selectedItem: { backgroundColor: '#CDE7FF' }, // blue selection
-  correctItem: { backgroundColor: '#81C784' }, // green correct
-  wrongItem: { backgroundColor: '#F44336' }, // red wrong
+  selectedItem: { backgroundColor: '#CDE7FF' },
+  correctItem: { backgroundColor: '#81C784' },
+  wrongItem: { backgroundColor: '#F44336' },
 
   itemText: { textAlign: 'center', fontSize: 14 },
 

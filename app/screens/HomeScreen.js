@@ -4,20 +4,22 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-nati
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInUp, BounceIn } from "react-native-reanimated";
-import { signOut } from "firebase/auth";
-import { auth } from "../../firebase";  // adjust path if needed
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 export default function HomeScreen() {
   const router = useRouter();
 
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.replace("/login"); // ✅ redirect directly to login
-    } catch (error) {
-      console.error("Logout Error:", error);
-    }
-  };
+  try {
+    await AsyncStorage.removeItem("user");
+    await AsyncStorage.removeItem("token");
+    router.replace("/screens/login");
+  } catch (error) {
+    console.error("Logout Error:", error);
+  }
+};
+
 
   const modules = [
     {

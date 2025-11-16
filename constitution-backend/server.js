@@ -1,27 +1,20 @@
-import express from "express";
-import mongoose from "mongoose";
-import cors from "cors";
-import dotenv from "dotenv";
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
 
-import authRoutes from "./routes/authRoutes.js";
-import resourceRoutes from "./routes/resourceRoutes.js";
-import mockRoutes from "./routes/mockRoutes.js";
-import instituteRoutes from "./routes/instituteRoutes.js";
+const authRoutes = require("./routes/auth");
 
-dotenv.config();
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/constitutionApp";
-mongoose.connect(MONGO_URI)
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("MongoDB error:", err));
+// Connect MongoDB
+mongoose.connect("mongodb+srv://root:root@cluster0.zutiyhk.mongodb.net/")
+  .then(() => console.log("MongoDB Connected"))
+  .catch(err => console.log(err));
 
+// API routes
 app.use("/api/auth", authRoutes);
-app.use("/api/resources", resourceRoutes);
-app.use("/api/mock", mockRoutes);
-app.use("/api/institute", instituteRoutes);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`));
+app.listen(5000, () => console.log("Server running on port 5000"));

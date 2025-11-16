@@ -1,133 +1,134 @@
 // app/screens/CitizenLearning.js
+
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  Image,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Animated,
+} from "react-native";
+
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { signOut } from "firebase/auth";
-import { useEffect, useState } from "react";
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import Animated, { FadeInUp } from "react-native-reanimated";
-import { auth } from "../../firebase";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { FadeInUp } from "react-native-reanimated";
 
-const CitizenLearning = () => {
+// ⭐ IMPORT GLOBAL SCORE MANAGER
+import { getGlobalScore, TOTAL_SCORE } from "../../utils/scoreManager";
+
+export default function CitizenLearning() {
   const router = useRouter();
-  const [showLessons, setShowLessons] = useState(false);
+
   const [showProfile, setShowProfile] = useState(false);
   const [userData, setUserData] = useState(null);
 
-  const [modules, setModules] = useState([
-    {
-      id: 1,
-      title: "Fundamental Rights",
-      desc: "Learn about your basic rights under the Constitution",
-      unlocked: true,
-      expanded: false,
-      games: [
-        { id: 1, title: "Right to Equality (Article 14)", desc: "Equality before law", unlocked: true, completed: false },
-        { id: 2, title: "Right to Freedom (Article 19)", desc: "Freedom of speech and more", unlocked: false, completed: false },
-        { id: 3, title: "Right Against Exploitation (Article 23)", desc: "Protection from exploitation", unlocked: false, completed: false },
-        { id: 4, title: "Right to Constitutional Remedies (Article 32)", desc: "Enforcing fundamental rights", unlocked: false, completed: false },
-        { id: 5, title: "Right to Education (Article 21A)", desc: "Free and compulsory education", unlocked: false, completed: false },
-      ],
-    },
-  ]);
+  const [globalScore, setGlobalScore] = useState(0);
+  const [xp, setXp] = useState(0);
 
+  // Animated progress bar
+  const progressWidth = useState(new Animated.Value(0))[0];
+
+  // ----------------------------------------------------
+  // Load User, Global Score, XP
+  // ----------------------------------------------------
   useEffect(() => {
-    fetchUserData();
+    loadUser();
+    loadScore();
+    loadXP();
   }, []);
 
-  const fetchUserData = async () => {
+  const loadUser = async () => {
     try {
-      const firebaseUid = auth.currentUser?.uid;
-      if (!firebaseUid) return;
-
-      const response = await fetch(`http://localhost:5000/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ firebaseUid }),
-      });
-
-      const data = await response.json();
-      if (data.ok) {
-        setUserData(data.user);
-      }
-    } catch (error) {
-      console.log('Error fetching user data:', error);
+      const stored = await AsyncStorage.getItem("user");
+      if (stored) setUserData(JSON.parse(stored));
+    } catch (e) {
+      console.log("User load error:", e);
     }
   };
 
-  const handleLogout = async () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Logout",
-          onPress: async () => {
-            try {
-              await signOut(auth);
-              router.replace("/screens/login");
-            } catch (error) {
-              Alert.alert("Error", "Failed to logout");
-            }
-          },
+  const loadScore = async () => {
+    try {
+      const score = await getGlobalScore();
+      console.log("Loaded Global Score:", score);
+      setGlobalScore(score);
+    } catch (e) {
+      console.log("Score load error:", e);
+    }
+  };
+
+  const loadXP = async () => {
+    try {
+      const xpStored = await AsyncStorage.getItem("xp");
+      setXp(xpStored ? parseInt(xpStored) : 0);
+    } catch (e) {
+      console.log("XP load error:", e);
+    }
+  };
+
+  // ----------------------------------------------------
+  // Animate progress bar
+  // ----------------------------------------------------
+  useEffect(() => {
+    const percent = (globalScore / TOTAL_SCORE) * 100;
+
+    Animated.timing(progressWidth, {
+      toValue: percent,
+      duration: 1200,
+      useNativeDriver: false,
+    }).start();
+  }, [globalScore]);
+
+  // ----------------------------------------------------
+  // Logout
+  // ----------------------------------------------------
+  const handleLogout = () => {
+    Alert.alert("Logout", "Are you sure?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        onPress: async () => {
+          await AsyncStorage.removeItem("user");
+          await AsyncStorage.removeItem("token");
+          router.replace("/screens/login");
         },
-      ]
-    );
+      },
+    ]);
   };
 
-  const toggleModule = (moduleId) => {
-    setModules((prev) =>
-      prev.map((module) =>
-        module.id === moduleId ? { ...module, expanded: !module.expanded } : module
-      )
-    );
-  };
-
-  const completeGame = (moduleId, gameId) => {
-    setModules((prev) =>
-      prev.map((module) =>
-        module.id === moduleId
-          ? {
-              ...module,
-              games: module.games.map((game, index) =>
-                game.id === gameId
-                  ? { ...game, completed: true }
-                  : game.id === gameId + 1
-                  ? { ...game, unlocked: true }
-                  : game
-              ),
-            }
-          : module
-      )
-    );
-    router.push(`/screens/QuizScreen?id=${gameId}`);
-  };
-
+  // ----------------------------------------------------
+  // RENDER UI
+  // ----------------------------------------------------
   return (
     <ScrollView style={styles.container}>
-      {/* ✅ Header with gradient */}
+      {/* HEADER */}
       <LinearGradient colors={["#4CAF50", "#81C784"]} style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            style={styles.profileButton}
-            onPress={() => setShowProfile(!showProfile)}
-          >
-            <Image source={require("../assets/logo.png")} style={styles.profileImage} />
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={() => setShowProfile(true)}>
+            <Image
+              source={require("../assets/logo.png")}
+              style={styles.profileImage}
+            />
           </TouchableOpacity>
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.headerText}>Citizen Learning</Text>
-            <Text style={styles.subHeader}>Know your rights, empower yourself 🇮🇳</Text>
+
+          <View style={styles.headerTextBox}>
+            <Text style={styles.headerTitle}>Citizen Learning</Text>
+            <Text style={styles.headerSub}>Know your rights 🇮🇳</Text>
           </View>
         </View>
       </LinearGradient>
 
-      {/* Profile Modal */}
+      {/* PROFILE MODAL */}
       {showProfile && (
         <Animated.View entering={FadeInUp} style={styles.profileModal}>
           <View style={styles.profileHeader}>
-            <Image source={require("../assets/logo.png")} style={styles.profileModalImage} />
+            <Image
+              source={require("../assets/logo.png")}
+              style={styles.profileImageLarge}
+            />
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setShowProfile(false)}
@@ -138,198 +139,122 @@ const CitizenLearning = () => {
 
           {userData && (
             <View style={styles.profileInfo}>
-              <Text style={styles.profileLabel}>Email:</Text>
-              <Text style={styles.profileValue}>{userData.email}</Text>
+              <Text style={styles.label}>Email</Text>
+              <Text style={styles.value}>{userData.email}</Text>
 
-              <Text style={styles.profileLabel}>Role:</Text>
-              <Text style={styles.profileValue}>{userData.role}</Text>
+              <Text style={styles.label}>Role</Text>
+              <Text style={styles.value}>{userData.role}</Text>
 
-              <Text style={styles.profileLabel}>Joined:</Text>
-              <Text style={styles.profileValue}>
+              <Text style={styles.label}>Joined</Text>
+              <Text style={styles.value}>
                 {new Date(userData.createdAt).toLocaleDateString()}
               </Text>
             </View>
           )}
 
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>Logout</Text>
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+            <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
         </Animated.View>
       )}
 
-      {/* ✅ Progress card */}
+      {/* PROGRESS CARD */}
       <Animated.View entering={FadeInUp} style={styles.progressCard}>
         <Text style={styles.sectionTitle}>Your Progress</Text>
+
         <View style={styles.progressBar}>
-          <View
-            style={[
-              styles.progressFill,
-              {
-                width: `${
-                  modules.reduce((total, module) => total + module.games.filter((g) => g.completed).length, 0) /
-                  modules.reduce((total, module) => total + module.games.length, 0) *
-                  100
-                }%`,
-              },
-            ]}
+          <Animated.View
+            style={{
+              height: "100%",
+              backgroundColor: "#4CAF50",
+              width: progressWidth.interpolate({
+                inputRange: [0, 100],
+                outputRange: ["0%", "100%"],
+              }),
+            }}
           />
         </View>
+
         <Text style={styles.progressText}>
-          {modules.reduce((total, module) => total + module.games.filter((g) => g.completed).length, 0)}/
-          {modules.reduce((total, module) => total + module.games.length, 0)} Games Completed • XP: 1,250
+          Score: {globalScore} / {TOTAL_SCORE} • XP: {xp}
         </Text>
       </Animated.View>
 
-      {/* ✅ Start Learning Button or Lesson List */}
-      {!showLessons ? (
-        <Animated.View entering={FadeInUp.delay(200)} style={styles.startCard}>
-          <Text style={styles.lessonTitle}>Learn Your Rights</Text>
-          <Text style={styles.lessonDesc}>
-            Explore fundamental rights with fun, interactive lessons and games!
-          </Text>
-          <TouchableOpacity style={styles.startButton} onPress={() => router.push('/screens/FundamentalRightsHeroScreen')}>
-            <Text style={styles.startButtonText}>Start Learning</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      ) : (
-        <View style={styles.lessonSection}>
-          <Text style={styles.sectionTitle}>Modules</Text>
-          {modules.map((module, index) => (
-            <Animated.View key={module.id} entering={FadeInUp.delay(index * 150)}>
-              <TouchableOpacity
-                style={[
-                  styles.moduleItem,
-                  !module.unlocked && { opacity: 0.5 },
-                ]}
-                disabled={!module.unlocked}
-                onPress={() => toggleModule(module.id)}
-              >
-                <LinearGradient
-                  colors={
-                    module.unlocked
-                      ? ["#E8F5E9", "#C8E6C9"]
-                      : ["#E0E0E0", "#BDBDBD"]
-                  }
-                  style={styles.moduleGradient}
-                >
-                  <Text style={styles.moduleText}>
-                    {module.expanded ? "📂 " : "📁 "}
-                    {module.title}
-                  </Text>
-                  <Text style={styles.moduleSub}>{module.desc}</Text>
-                  <Text style={styles.moduleProgress}>
-                    {module.games.filter((g) => g.completed).length}/{module.games.length} Games Completed
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
+      {/* START LEARNING */}
+      <Animated.View entering={FadeInUp.delay(150)} style={styles.bigCard}>
+        <Text style={styles.bigTitle}>Start Learning</Text>
+        <Text style={styles.bigDesc}>
+          Interactive lessons and quizzes based on your rights.
+        </Text>
 
-              {module.expanded && (
-                <View style={styles.gamesList}>
-                  {module.games.map((game, gameIndex) => (
-                    <Animated.View key={game.id} entering={FadeInUp.delay(gameIndex * 100)}>
-                      <TouchableOpacity
-                        style={[
-                          styles.gameItem,
-                          !game.unlocked && { opacity: 0.5 },
-                          game.completed && { borderColor: "#4CAF50", borderWidth: 2 },
-                        ]}
-                        disabled={!game.unlocked}
-                        onPress={() => completeGame(module.id, game.id)}
-                      >
-                        <LinearGradient
-                          colors={
-                            game.completed
-                              ? ["#A5D6A7", "#81C784"]
-                              : game.unlocked
-                              ? ["#FFF3E0", "#FFE0B2"]
-                              : ["#E0E0E0", "#BDBDBD"]
-                          }
-                          style={styles.gameGradient}
-                        >
-                          <Text style={styles.gameText}>
-                            {game.completed ? "✅ " : game.unlocked ? "🎮 " : "🔒 "}
-                            {game.title}
-                          </Text>
-                          <Text style={styles.gameSub}>{game.desc}</Text>
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    </Animated.View>
-                  ))}
-                </View>
-              )}
-            </Animated.View>
-          ))}
-        </View>
-      )}
+        <TouchableOpacity
+          style={styles.greenBtn}
+          onPress={() => router.push("/screens/FundamentalRightsHeroScreen")}
+        >
+          <Text style={styles.greenBtnText}>Start Now</Text>
+        </TouchableOpacity>
+      </Animated.View>
 
-      {/* ✅ Optional extra sections */}
-      {!showLessons && (
-        <>
-          {/* Daily Challenge */}
-          <Animated.View entering={FadeInUp.delay(400)} style={styles.card}>
-            <Text style={styles.sectionTitle}>Daily Challenges</Text>
-            <View style={styles.challengeItem}>
-              <Text style={styles.challengeText}>🏆 Complete 3 Lessons</Text>
-              <Text style={styles.reward}>+100 XP</Text>
-            </View>
-            <View style={styles.challengeItem}>
-              <Text style={styles.challengeText}>🎯 Get 100% in Quiz</Text>
-              <Text style={styles.reward}>+150 XP</Text>
-            </View>
-          </Animated.View>
+      {/* DAILY CHALLENGES */}
+      <Animated.View entering={FadeInUp.delay(300)} style={styles.card}>
+        <Text style={styles.sectionTitle}>Daily Challenges</Text>
 
-          {/* Situation-Based Game */}
-          <Animated.View entering={FadeInUp.delay(600)} style={styles.card}>
-            <Text style={styles.sectionTitle}>Situation-Based Game</Text>
-            <Text style={styles.subDesc}>
-              Test your rights in real-world inspired scenarios!
-            </Text>
-            <TouchableOpacity
-              style={styles.gameButton}
-              onPress={() => router.push("/screens/GameScreen")}
-            >
-              <Text style={styles.gameButtonText}>Play Now 🎮</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </>
-      )}
+        <Text style={styles.challenge}>🏆 Answer 5 questions • +25 XP</Text>
+        <Text style={styles.challenge}>🎯 Get 3 correct in a row • +40 XP</Text>
+      </Animated.View>
+
+      {/* GAME */}
+      <Animated.View entering={FadeInUp.delay(450)} style={styles.card}>
+        <Text style={styles.sectionTitle}>Situation-Based Game</Text>
+        <Text style={styles.desc}>
+          Real world scenarios to test your constitutional rights.
+        </Text>
+
+        <TouchableOpacity
+          style={styles.greenBtn}
+          onPress={() => router.push("/screens/GameScreen")}
+        >
+          <Text style={styles.greenBtnText}>Play Now</Text>
+        </TouchableOpacity>
+      </Animated.View>
     </ScrollView>
   );
-};
+}
 
-export default CitizenLearning;
+// ----------------------------------------------------
+// STYLES
+// ----------------------------------------------------
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FAFAFA",
-  },
+  container: { flex: 1, backgroundColor: "#FAFAFA" },
+
   header: {
     paddingVertical: 30,
-    alignItems: "center",
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
   },
-  headerContent: {
+  headerRow: {
     flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
     paddingHorizontal: 20,
+    alignItems: "center",
   },
-  profileButton: {
-    marginRight: 15,
-  },
+  headerTextBox: { marginLeft: 15 },
+  headerTitle: { color: "#fff", fontSize: 24, fontWeight: "bold" },
+  headerSub: { color: "#E8F5E9", marginTop: 4 },
+
   profileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     borderWidth: 2,
     borderColor: "#fff",
   },
-  headerTextContainer: {
-    flex: 1,
-    alignItems: "center",
+  profileImageLarge: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
   },
+
   profileModal: {
     backgroundColor: "#fff",
     margin: 15,
@@ -345,144 +270,71 @@ const styles = StyleSheet.create({
   profileHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 15,
-  },
-  profileModalImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 15,
   },
   closeButton: {
     position: "absolute",
-    top: 0,
     right: 0,
+    top: 0,
     padding: 5,
   },
-  closeButtonText: {
-    fontSize: 18,
-    color: "#666",
-  },
-  profileInfo: {
-    marginBottom: 20,
-  },
-  profileLabel: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "bold",
-    marginTop: 10,
-  },
-  profileValue: {
-    fontSize: 16,
-    color: "#333",
-    marginTop: 2,
-  },
-  logoutButton: {
+  closeButtonText: { fontSize: 20, color: "#444" },
+
+  profileInfo: { marginVertical: 15 },
+  label: { fontSize: 14, color: "#666", fontWeight: "bold" },
+  value: { fontSize: 16, color: "#333" },
+
+  logoutBtn: {
     backgroundColor: "#FF4444",
-    paddingVertical: 12,
+    padding: 12,
     borderRadius: 10,
     alignItems: "center",
   },
-  logoutButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  headerText: {
-    color: "#fff",
-    fontSize: 26,
-    fontWeight: "bold",
-  },
-  subHeader: {
-    color: "#E8F5E9",
-    fontSize: 14,
-    marginTop: 5,
-  },
+  logoutText: { color: "#fff", fontWeight: "bold" },
 
   progressCard: {
     backgroundColor: "#fff",
     margin: 15,
     padding: 15,
     borderRadius: 15,
-    elevation: 5,
+    elevation: 4,
   },
-  sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#333", marginBottom: 10 },
+  sectionTitle: { fontSize: 18, fontWeight: "bold" },
+
   progressBar: {
     height: 10,
-    backgroundColor: "#E0E0E0",
+    backgroundColor: "#ddd",
     borderRadius: 5,
     overflow: "hidden",
+    marginTop: 10,
   },
-  progressFill: {
-    height: "100%",
-    backgroundColor: "#4CAF50",
-  },
-  progressText: { fontSize: 13, color: "#777", marginTop: 5 },
+  progressText: { marginTop: 10, color: "#555", fontSize: 14 },
 
-  startCard: {
+  bigCard: {
     backgroundColor: "#E8F5E9",
-    marginHorizontal: 20,
-    marginVertical: 10,
+    margin: 15,
     padding: 20,
     borderRadius: 15,
     alignItems: "center",
   },
-  lessonTitle: { fontSize: 20, fontWeight: "bold", color: "#2E7D32", marginBottom: 8 },
-  lessonDesc: { fontSize: 14, color: "#4CAF50", textAlign: "center", marginBottom: 15 },
-  startButton: {
+  bigTitle: { fontSize: 20, fontWeight: "bold", color: "#2E7D32" },
+  bigDesc: { color: "#444", marginVertical: 10, textAlign: "center" },
+
+  greenBtn: {
     backgroundColor: "#4CAF50",
     paddingVertical: 12,
     paddingHorizontal: 30,
-    borderRadius: 12,
-  },
-  startButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-
-  lessonSection: { marginHorizontal: 15, marginTop: 10 },
-  moduleItem: {
-    marginVertical: 8,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  moduleGradient: {
-    padding: 15,
-  },
-  moduleText: { fontSize: 16, fontWeight: "bold", color: "#2E7D32" },
-  moduleSub: { fontSize: 13, color: "#555", marginTop: 5 },
-  moduleProgress: { fontSize: 12, color: "#777", marginTop: 5 },
-  gamesList: { marginLeft: 20, marginTop: 10 },
-  gameItem: {
-    marginVertical: 5,
     borderRadius: 10,
-    overflow: "hidden",
   },
-  gameGradient: {
-    padding: 12,
-  },
-  gameText: { fontSize: 14, fontWeight: "bold", color: "#2E7D32" },
-  gameSub: { fontSize: 12, color: "#555", marginTop: 3 },
+  greenBtnText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
 
   card: {
     backgroundColor: "#fff",
     marginHorizontal: 15,
-    marginVertical: 10,
+    marginBottom: 12,
     padding: 20,
     borderRadius: 15,
     elevation: 4,
   },
-  challengeItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginVertical: 5,
-  },
-  challengeText: { fontSize: 15, color: "#333" },
-  reward: { color: "#4CAF50", fontWeight: "bold" },
-
-  subDesc: { fontSize: 14, color: "#555", marginBottom: 10 },
-  gameButton: {
-    backgroundColor: "#4CAF50",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  gameButtonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  challenge: { marginVertical: 5, fontSize: 15 },
+  desc: { color: "#555", marginBottom: 10 },
 });

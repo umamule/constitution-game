@@ -64,7 +64,7 @@ export default function RightDetailScreen() {
             onPress={() => router.back()}
             activeOpacity={0.8}
           >
-            <Text style={styles.backButtonText}>Back to Rights</Text>
+            <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
